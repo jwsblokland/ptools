@@ -1,0 +1,28 @@
+!> \brief Module containing functions and subroutines regarding the version number.
+module mptools_version
+  use, intrinsic :: iso_fortran_env,  only: int32
+  implicit none
+
+  private
+  public  :: version
+
+  !> \ingroup version
+  !> \{
+  integer(int32), parameter :: PTOOLS_MAJOR = @PROJECT_VERSION_MAJOR@
+  integer(int32), parameter :: PTOOLS_MINOR = @PROJECT_VERSION_MINOR@
+  integer(int32), parameter :: PTOOLS_PATCH = @PROJECT_VERSION_PATCH@
+  !> \}
+  
+contains
+  !> \ingroup version
+  !> \{
+  !> \brief Returns the version number as string.
+  function version()
+    character(len=8) :: version  !< Version number.
+
+    write(version, 100) PTOOLS_MAJOR, PTOOLS_MINOR, PTOOLS_PATCH
+
+100 format(i0, ".", i0 , ".", i0)
+  end function version
+  !> \}
+end module mptools_version

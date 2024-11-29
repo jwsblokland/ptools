@@ -1,0 +1,9 @@
+/**
+ * \mainpage ptools ptools
+ *
+ * The main purpose ptools is to provide a small set of tools to quickly analyze
+ * the current OpenMP, MPI, and/or OpenMP+MPI configuation settings in the
+ * current environment. This could be useful before running, for example, a
+ * large scale hybride OpenMP+MPI code.
+ * 
+ */
