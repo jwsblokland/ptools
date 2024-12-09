@@ -1,0 +1,84 @@
+# ptools-config.cmake
+# ---------------------
+#
+# Finds the ptools library, specify the starting search path in ptools_ROOT.
+#
+# Static vs. shared
+# ----------------- 
+# To make use of the static library instead of the shared one, one needs
+# to set the variable ptools_USE_STATIC_LIBS to ON before calling find_package.
+# Example:
+#   set(ptools_USE_STATIC_LIBS ON)
+#   find_package(ptools CONFIG REQUIRED)
+#
+# There is also the option to make use of the dedicated static and shared
+# ptools librart.
+#
+# This will define the following variables:
+#
+#   ptools_FOUND     - True if the system has found the ptools libraries
+#   ptools_VERSION   - The version of the ptools library which was found
+#
+# and the following imported targets:
+#
+#   ptools::lib        - The ptools library
+#   ptools::lib_static - The static ptools library
+#   ptools::lib_shared - The shared ptools library
+
+find_path(ptools_INCLUDE_DIR NAMES mptools.mod DOC "ptools include directory")
+find_library(ptools_static_LIBRARY NAMES libptools.a DOC "Static ptools library")
+find_library(ptools_shared_LIBRARY NAMES libptools.so DOC "Shared ptools library")
+find_program(PTOOLS_PTOOLS name ptools DOC "ptools executable")
+
+# Check version here
+if (ptools_static_LIBRARY)
+  set(ptools_VERSION @PROJECT_VERSION@)
+endif ()
+
+include(FindPackageHandleStandardArgs)
+set(${CMAKE_FIND_PACKAGE_NAME}_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
+find_package_handle_standard_args(ptools
+  FOUND_VAR ptools_FOUND
+  REQUIRED_VARS ptools_static_LIBRARY ptools_shared_LIBRARY ptools_INCLUDE_DIR ptools_PTOOLS
+  VERSION_VAR ptools_VERSION
+  CONFIG_MODE
+)
+
+if (ptools_FOUND)
+  # Static library
+  add_library(ptools::lib_static STATIC IMPORTED)
+  set_target_properties(ptools::lib_static PROPERTIES
+    IMPORTED_LOCATION "${ptools_static_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${ptools_INCLUDE_DIR}"
+  )
+
+  # Shared library
+  add_library(ptools::lib_shared SHARED IMPORTED)
+  set_target_properties(ptools::lib_shared PROPERTIES
+    IMPORTED_LOCATION "${ptools_shared_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${ptools_INCLUDE_DIR}"
+  )
+  
+  if(ptools_USE_STATIC_LIBS)
+    add_library(ptools::lib ALIAS ptools::lib_static)
+    set(ptools_LIBRARY ${ptools_static_LIBRARY)
+  else()
+    add_library(ptools::lib ALIAS ptools::lib_shared)
+    set(ptools_LIBRARY ${ptools_shared_LIBRARY)
+  endif()
+
+  # Executable
+  add_executable(ptools::pdiag IMPORTED)
+  set_target_properties(ptools::pdiag PROPERTIES
+    IMPORTED_LOCATION "${ptools_shared_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${ptools_INCLUDE_DIR}"
+  )
+  
+endif()
+
+mark_as_advanced(
+  ptools_static_LIBRARY
+  ptools_shared_LIBRARY
+  ptools_LIBRARY
+  ptools_INCLUDE_DIR
+)

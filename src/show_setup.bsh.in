@@ -1,0 +1,41 @@
+#!/bin/bash
+
+function usage()
+{
+    echo "Usage: $0 <number of nodes> <number of ranks per node> <number of cores per node>"
+}
+
+if [[ $# != 3 ]]; then
+    echo "*** ptools @PROJECT_VERSION@: ERROR ***"
+    usage
+    exit 1
+fi
+
+# Input parameters
+NODES=$1
+NRANKS_PER_NODE=$2
+NCORES_PER_NODE=$3
+
+# Configuration
+NRANKS=$(( NRANKS_PER_NODE * NODES ))
+NCORES_PER_RANK=$(( NCORES_PER_NODE / NRANKS_PER_NODE ))
+NCORES_PER_NODE_UNUSED=$(( NCORES_PER_NODE % NRANKS_PER_NODE ))
+NCORES_UNUSED=$(( NCORES_PER_NODE_UNUSED * NODES ))
+
+# Report
+echo "--- ptools @PROJECT_VERSION@: optimal environment setup ---"
+echo "  \$ export OMP_NUM_THREADS=${NCORES_PER_RANK}"
+echo "  \$ export OMP_PROC_BIND=close"
+echo "  \$ export OMP_PLACES=cores"
+echo "  \$ mpirun -n ${NRANKS} --map-by slot:PE=${NCORES_PER_RANK} <program>"
+
+if [[ $NCORES_PER_NODE_UNUSED > 0 ]]; then
+    echo " "
+    echo "  *** WARNING ***"
+    echo "  There will be unused cores"
+    echo "    - Per node: ${NCORES_PER_NODE_UNUSED}"
+    echo "    - Total:    ${NCORES_UNUSED}"
+fi
+
+exit 0
+
