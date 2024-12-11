@@ -75,7 +75,7 @@ contains
     if (allocated(dtypes))  deallocate(dtypes)
 
     ! ompi_rank_t
-    count = 4
+    count = 5
     allocate(blklen(count), disp(count), dtypes(count))
     blklen = [ 64,            1,            1,            1,            1            ]
     disp   = [ 0,             64,           68,           72,           76           ]
