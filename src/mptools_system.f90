@@ -1,3 +1,4 @@
+  !> \cond _INTERNAL_
 !> \brief Module containing parameters, functions and subroutines for retrieving
 !!        the system information.
 module mptools_system
@@ -79,3 +80,4 @@ contains
     if (i<len(F_string)) F_string(i:) = ' '
   end subroutine C_F_string
 end module mptools_system
+!> \endcond

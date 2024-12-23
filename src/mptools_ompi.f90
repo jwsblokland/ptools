@@ -30,6 +30,7 @@ module mptools_ompi
   end type ompi_rank_t
 
 contains
+  !> \cond _INTERNAL_
   !> \brief Checks the size of the array rank_info.
   function check_rank_info(rank_info, nthreads) result(valid)
     use, intrinsic :: iso_fortran_env,  only: error_unit
@@ -47,7 +48,9 @@ contains
 100 format("*** ERROR: The length of the dimension of the array rank_info (", I0, ") is too small. ",  &
            "Its length should be at least ", I0, ".")
   end function check_rank_info
+  !> \endcond
 
+  !> \cond _INTERNAL_
   !> \brief Initializes and commits the MPI datatype ompi_dtype and ompi_rank_dtype.
   subroutine ompi_init_dtypes(ompi_dtype, ompi_rank_dtype)
     use :: mpi_f08,  only: MPI_ADDRESS_KIND, MPI_CHARACTER, MPI_INTEGER4, MPI_Datatype,  &
@@ -86,7 +89,9 @@ contains
     if (allocated(disp))    deallocate(disp)
     if (allocated(dtypes))  deallocate(dtypes)
   end subroutine ompi_init_dtypes
+  !> \endcond
 
+  !> \cond _INTERNAL_
   !> \brief Frees the MPI datatype ompi_dtype and ompi_rank_dtype.
   subroutine ompi_free_dtypes(ompi_dtype, ompi_rank_dtype)
     use :: mpi_f08,  only: MPI_Datatype, MPI_Type_free
@@ -97,8 +102,10 @@ contains
     call MPI_Type_free(ompi_dtype)
     call MPI_Type_free(ompi_rank_dtype)
   end subroutine ompi_free_dtypes
+  !> \endcond
 
-  !> \brief Perform the OMPI analysis for a rank.
+  !> \cond _INTERNAL_
+  !> \brief Perform the OpenMP+MPI analysis for a rank.
   function ompi_rank_analysis(ompi_info, rank_info) result(valid)
     use, intrinsic :: iso_fortran_env,     only: int32
     use            :: mpi_f08,             only: MPI_COMM_WORLD,                                 &
@@ -155,8 +162,11 @@ contains
        end do
     end if
   end function ompi_rank_analysis
+  !> \endcond
 
-  !> \brief Perform OMPI analysis for all the ranks.
+  !> \brief Perform OpenMP+MPI analysis for all the ranks.
+  !!
+  !! \warning Be aware, the variable \p rank_info will only be allocated for rank 0.
   subroutine ompi_analysis(ompi_info, rank_info)
     use :: mpi_f08,             only: MPI_COMM_WORLD, MPI_Datatype, MPI_Status,          &
                                       MPI_Comm_size, MPI_Comm_rank, MPI_Recv, MPI_Send

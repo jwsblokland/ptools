@@ -1,0 +1,5 @@
+/**
+ * \example diag_mpi.f90
+ * \example diag_omp.f90
+ * \example diag_ompi.f90
+ */

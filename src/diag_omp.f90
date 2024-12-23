@@ -12,7 +12,7 @@ program diag_omp
   if (omp_analysis(omp_info, thread_info)) then
      call omp_report(omp_info, thread_info)
   else
-     write(error_unit,'(A)') "*** ERROR: Unable to create openMP analysis report"
+     write(error_unit,'(A)') "*** ERROR: Unable to create OpenMP analysis report"
      error stop 1
   end if
 end program diag_omp
