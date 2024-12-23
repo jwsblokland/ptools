@@ -2,7 +2,7 @@
 
 function usage()
 {
-    echo "Usage: $0 <number of nodes> <number of ranks per node> <number of cores per node>"
+    echo "Usage: $0 <#nodes> <#ranks_per_node> <#cores_per_node>"
 }
 
 if [[ $# != 3 ]]; then

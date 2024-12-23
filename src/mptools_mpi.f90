@@ -24,6 +24,7 @@ module mptools_mpi
   end type mpi_rank_t
 
 contains
+  !> \cond _INTERNAL_
   !> \brief Checks the size of the array rank_info.
   function check_rank_info(rank_info, nranks) result(valid)
     use, intrinsic :: iso_fortran_env,  only: error_unit
@@ -41,7 +42,9 @@ contains
 100 format("*** ERROR: The length of the dimension of the array rank_info (", I0, ") is too small. ",  &
            "Its length should be at least ", I0, ".")
   end function check_rank_info
+  !> \endcond
 
+  !> \cond _INTERNAL_
   !> \brief Initializes and commits the MPI datatype ompi_dtype and ompi_rank_dtype.
   subroutine mpi_init_dtypes(mpi_dtype, mpi_rank_dtype)
     use :: mpi_f08,  only: MPI_ADDRESS_KIND, MPI_CHARACTER, MPI_INTEGER4, MPI_Datatype, &
@@ -80,7 +83,9 @@ contains
     if (allocated(disp))    deallocate(disp)
     if (allocated(dtypes))  deallocate(dtypes)
   end subroutine mpi_init_dtypes
+  !> \endcond
 
+  !> \cond _INTERNAL_
   !> \brief Frees the MPI datatype ompi_dtype and ompi_rank_dtype.
   subroutine mpi_free_dtypes(mpi_dtype, mpi_rank_dtype)
     use :: mpi_f08,  only: MPI_Datatype, MPI_Type_free
@@ -91,7 +96,9 @@ contains
     call MPI_Type_free(mpi_dtype)
     call MPI_Type_free(mpi_rank_dtype)
   end subroutine mpi_free_dtypes
+  !> \endcond
 
+  !> \cond _INTERNAL_
   !> \brief Perform the MPI analysis for a rank.
   function mpi_rank_analysis(mpi_info, rank_info) result(valid)
     use, intrinsic :: iso_fortran_env,  only: int32
@@ -123,8 +130,11 @@ contains
     rank_info%rankID   = irank
     rank_info%vcoreID  = get_vcore_id()
   end function mpi_rank_analysis
+  !> \endcond
 
   !> \brief Perfom the MPI analysis for all ranks.
+  !!
+  !! \warning Be aware, the variable \p rank_info will only be allocated for rank 0.
   subroutine mpi_analysis(mpi_info, rank_info)
     use :: mpi_f08,  only: MPI_COMM_WORLD, MPI_Datatype, MPI_Status,          &
                            MPI_Comm_size, MPI_Comm_rank, MPI_Recv, MPI_Send

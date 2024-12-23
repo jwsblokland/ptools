@@ -24,6 +24,7 @@ module mptools_omp
   end type omp_thread_t
 
 contains
+  !> \cond _INTERNAL_
   !> \brief Checks the size of the array thread_info.
   function check_thread_info(thread_info, nthreads) result(valid)
     use, intrinsic :: iso_fortran_env,  only: error_unit
@@ -41,7 +42,9 @@ contains
 100 format("*** ERROR: The length of the dimension of the array thread_info (", I0, ") is too small. ",  &
            "Its length should be at least ", I0, ".")
   end function check_thread_info
+  !> \endcond
   
+  !> \cond _INTERNAL_
   !> \brief Get the OpenMP schedule string.
   function get_omp_schedule_type(schedule_id) result(schedule)
     use, intrinsic :: iso_fortran_env,     only: int32
@@ -64,7 +67,9 @@ contains
        schedule = "unknown"
     end select
   end function get_omp_schedule_type
+  !> \endcond
 
+  !> \cond _INTERNAL_
   !> \brief Get the OpenMP schedule string.
   function get_omp_proc_bind_type(bind_id) result(bind)
     use, intrinsic :: iso_fortran_env,     only: int32
@@ -90,6 +95,7 @@ contains
        bind = "unknown"
     end select
   end function get_omp_proc_bind_type
+  !> \endcond
 
   !> \brief Perform the OpenMP analysis.
   function omp_analysis(omp_info, thread_info) result(valid)
