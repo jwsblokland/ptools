@@ -1,13 +1,13 @@
 !> \brief Module containing parameters, functions and subroutines for analyzing
 !!        the MPI configuration.
 module mptools_mpi
-  use, intrinsic :: iso_fortran_env, only: int32
+  use, intrinsic :: iso_fortran_env,     only: int32
   use, intrinsic :: iso_c_binding
   use            :: mptools_parameters,  only: NAME_SIZE
   implicit none
 
   private
-  public  :: mpi_init_dtypes, mpi_free_dtypes, mpi_rank_analysis, mpi_report
+  public  :: mpi_analysis, mpi_report
 
   !> \brief MPI derived type.
   type, public :: mpi_t
@@ -22,7 +22,7 @@ module mptools_mpi
      integer(int32)           :: rankID   = -1       !< MPI rank identifier.
      integer(int32)           :: vcoreID  = -1       !< Virtual core identifier.
   end type mpi_rank_t
-  
+
 contains
   !> \brief Checks the size of the array rank_info.
   function check_rank_info(rank_info, nranks) result(valid)
@@ -92,11 +92,11 @@ contains
     call MPI_Type_free(mpi_rank_dtype)
   end subroutine mpi_free_dtypes
 
-  !> \brief Perform the MPI analysis.
+  !> \brief Perform the MPI analysis for a rank.
   function mpi_rank_analysis(mpi_info, rank_info) result(valid)
     use, intrinsic :: iso_fortran_env,  only: int32
-    use            :: mpi_f08,          only: MPI_COMM_WORLD,  &
-                                              MPI_Comm_rank, MPI_Comm_size
+    use            :: mpi_f08,          only: MPI_COMM_WORLD,                                 &
+                                              MPI_Comm_rank, MPI_Comm_size, MPI_Get_version
     use            :: mptools_system,   only: get_hostname, get_vcore_id
 
     type(mpi_t),      intent(out) :: mpi_info   !< General MPI information.
@@ -106,7 +106,9 @@ contains
     ! Locals
     integer(int32) :: irank, nranks, version, subversion
 
-    valid = .true.
+    valid      = .true.
+    version    = -1
+    subversion = -1
 
     ! General informaton
     call MPI_Get_version(version, subversion)
@@ -121,6 +123,42 @@ contains
     rank_info%rankID   = irank
     rank_info%vcoreID  = get_vcore_id()
   end function mpi_rank_analysis
+
+  !> \brief Perfom the MPI analysis for all ranks.
+  subroutine mpi_analysis(mpi_info, rank_info)
+    use :: mpi_f08,  only: MPI_COMM_WORLD, MPI_Datatype, MPI_Status,          &
+                           MPI_Comm_size, MPI_Comm_rank, MPI_Recv, MPI_Send
+
+    type(mpi_t),                                 intent(out) :: mpi_info   !< General MPI information.
+    type(mpi_rank_t), dimension(:), allocatable, intent(out) :: rank_info  !< MPI rank information.
+
+    ! Locals
+    integer            :: i, ierror, irank, nranks
+    type(mpi_rank_t)   :: info
+    logical            :: valid
+    type(MPI_Datatype) :: mpi_dtype, mpi_rank_dtype
+    type(MPI_Status)   :: status
+
+    call mpi_init_dtypes(mpi_dtype, mpi_rank_dtype)
+    call MPI_Comm_size(MPI_COMM_WORLD, nranks)
+    call MPI_Comm_rank(MPI_COMM_WORLD, irank)
+    if (irank == 0) then
+       allocate(rank_info(nranks))
+
+       valid = mpi_rank_analysis(mpi_info, info)
+       rank_info(1) = info
+
+       do i = 1, nranks - 1
+          call MPI_Recv(info, 1, mpi_rank_dtype, i, 0, MPI_COMM_WORLD, status, ierror)
+          rank_info(status%mpi_source + 1) = info
+       end do
+    else
+       valid = mpi_rank_analysis(mpi_info, info)
+       call MPI_Send(info, 1, mpi_rank_dtype, 0, 0, MPI_COMM_WORLD, ierror)
+    end if
+
+    call mpi_free_dtypes(mpi_dtype, mpi_rank_dtype)
+  end subroutine mpi_analysis
 
   !> \brief Reports the MPI configuration to the screen or file.
   subroutine mpi_report(mpi_info, rank_info, unit)
@@ -138,7 +176,7 @@ contains
     if (.not. check_rank_info(rank_info, mpi_info%nranks))  return
 
     nranks = mpi_info%nranks
-    
+
     lunit = output_unit
     if (present(unit))  lunit = unit
 
@@ -150,7 +188,7 @@ contains
     do i = 1, nranks
        write(output_unit, 210) trim(rank_info(i)%hostname), rank_info(i)%rankID, rank_info(i)%vcoreID
     end do
-  
+
 200 format(4X,A16,2X,A6,2X,A7)
 210 format(4X,A16,2X,I6,2X,I7)
   end subroutine mpi_report

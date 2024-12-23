@@ -7,7 +7,7 @@ module mptools_ompi
   implicit none
 
   private
-  public  :: ompi_init_dtypes, ompi_free_dtypes, ompi_rank_analysis, ompi_report
+  public  :: ompi_analysis, ompi_report
 
   !> \brief OpenMP+MPI derived type.
   type, public :: ompi_t
@@ -98,11 +98,11 @@ contains
     call MPI_Type_free(ompi_rank_dtype)
   end subroutine ompi_free_dtypes
 
-  !> \brief Perform the OMPI analysis.
+  !> \brief Perform the OMPI analysis for a rank.
   function ompi_rank_analysis(ompi_info, rank_info) result(valid)
     use, intrinsic :: iso_fortran_env,     only: int32
-    use            :: mpi_f08,             only: MPI_COMM_WORLD,  &
-                                                 MPI_Comm_rank, MPI_Comm_size
+    use            :: mpi_f08,             only: MPI_COMM_WORLD,                                 &
+                                                 MPI_Comm_rank, MPI_Comm_size, MPI_Get_version
     use            :: mptools_omp,         only: omp_t, omp_thread_t, omp_analysis
     use            :: mptools_parameters,  only: MAX_THREADS, NAME_SIZE
     use            :: mptools_system,      only: get_hostname
@@ -118,11 +118,13 @@ contains
     type(omp_t)                                :: omp_info
     type(omp_thread_t), dimension(MAX_THREADS) :: thread_info
 
-    valid     = .true.
-    irank     = -1
-    nranks    = -1
-    ithread   = -1
-    
+    valid      = .true.
+    version    = -1
+    subversion = -1
+    irank      = -1
+    nranks     = -1
+    ithread    = -1
+
     ! General informaton
     call MPI_Get_version(version, subversion)
     call MPI_Comm_size(MPI_COMM_WORLD, nranks)
@@ -153,6 +155,49 @@ contains
        end do
     end if
   end function ompi_rank_analysis
+
+  !> \brief Perform OMPI analysis for all the ranks.
+  subroutine ompi_analysis(ompi_info, rank_info)
+    use :: mpi_f08,             only: MPI_COMM_WORLD, MPI_Datatype, MPI_Status,          &
+                                      MPI_Comm_size, MPI_Comm_rank, MPI_Recv, MPI_Send
+    use :: mptools_parameters,  only: MAX_THREADS
+
+    type(ompi_t),                                 intent(out) :: ompi_info  !< General OMPI information.
+    type(ompi_rank_t), dimension(:), allocatable, intent(out) :: rank_info  !< OMPI rank information.
+
+    ! Locals
+    logical                                    :: valid
+    integer(int32)                             :: i, ierror, irank, nranks, nthreads
+    integer(int32)                             :: nelems, idx_s, idx_e
+    type(ompi_rank_t),  dimension(MAX_THREADS) :: info
+    type(MPI_Datatype)                         :: ompi_dtype, ompi_rank_dtype
+    type(MPI_Status)                           :: status
+
+    call ompi_init_dtypes(ompi_dtype, ompi_rank_dtype)
+    call MPI_Comm_size(MPI_COMM_WORLD, nranks)
+    call MPI_Comm_rank(MPI_COMM_WORLD, irank)
+    if (irank == 0) then
+       valid = ompi_rank_analysis(ompi_info, info)
+
+       nthreads = ompi_info%nthreads
+       allocate(rank_info(nranks * nthreads))
+       rank_info(1:nthreads) = info(1:nthreads)
+
+       nelems = nthreads
+       do i = 1, nranks - 1
+          call MPI_Recv(info, nelems, ompi_rank_dtype, i, 0, MPI_COMM_WORLD, status, ierror)
+          idx_s                  =  status%mpi_source      * nthreads + 1
+          idx_e                  = (status%mpi_source + 1) * nthreads
+          rank_info(idx_s:idx_e) = info(1:nthreads)
+       end do
+    else
+       valid  = ompi_rank_analysis(ompi_info, info)
+       nelems = ompi_info%nthreads
+       call MPI_Send(info, nelems, ompi_rank_dtype, 0, 0, MPI_COMM_WORLD, ierror)
+    end if
+
+    call ompi_free_dtypes(ompi_dtype, ompi_rank_dtype)
+  end subroutine ompi_analysis
 
   !> \brief Reports the OpenMP+MPI configuration to the screen or file.
   subroutine ompi_report(ompi_info, rank_info, unit)
