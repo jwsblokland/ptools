@@ -3,7 +3,7 @@
 module mptools_ompi
   use, intrinsic :: iso_fortran_env,     only: int32
   use, intrinsic :: omp_lib_kinds,       only: OMP_PROC_BIND_KIND, OMP_SCHED_KIND
-  use            :: mptools_parameters,  only: NAME_SIZE
+  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE, MAX_THREADS
   implicit none
 
   private
@@ -107,12 +107,11 @@ contains
   !> \cond _INTERNAL_
   !> \brief Perform the OpenMP+MPI analysis for a rank.
   function ompi_rank_analysis(ompi_info, rank_info) result(valid)
-    use, intrinsic :: iso_fortran_env,     only: int32
-    use            :: mpi_f08,             only: MPI_COMM_WORLD,                                 &
-                                                 MPI_Comm_rank, MPI_Comm_size, MPI_Get_version
-    use            :: mptools_omp,         only: omp_t, omp_thread_t, omp_analysis
-    use            :: mptools_parameters,  only: MAX_THREADS, NAME_SIZE
-    use            :: mptools_system,      only: get_hostname
+    use, intrinsic :: iso_fortran_env,  only: int32
+    use            :: mpi_f08,          only: MPI_COMM_WORLD,                                 &
+                                              MPI_Comm_rank, MPI_Comm_size, MPI_Get_version
+    use            :: mptools_omp,      only: omp_t, omp_thread_t, omp_analysis
+    use            :: mptools_system,   only: get_hostname
 
     type(ompi_t),                    intent(out) :: ompi_info  !< General OMPI information.
     type(ompi_rank_t), dimension(:), intent(out) :: rank_info  !< OMPI rank information.
@@ -168,9 +167,8 @@ contains
   !!
   !! \warning Be aware, the variable \p rank_info will only be allocated for rank 0.
   subroutine ompi_analysis(ompi_info, rank_info)
-    use :: mpi_f08,             only: MPI_COMM_WORLD, MPI_Datatype, MPI_Status,          &
-                                      MPI_Comm_size, MPI_Comm_rank, MPI_Recv, MPI_Send
-    use :: mptools_parameters,  only: MAX_THREADS
+    use :: mpi_f08,  only: MPI_COMM_WORLD, MPI_Datatype, MPI_Status,          &
+                           MPI_Comm_size, MPI_Comm_rank, MPI_Recv, MPI_Send
 
     type(ompi_t),                                 intent(out) :: ompi_info  !< General OMPI information.
     type(ompi_rank_t), dimension(:), allocatable, intent(out) :: rank_info  !< OMPI rank information.

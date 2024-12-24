@@ -1,8 +1,9 @@
 !> \brief Module containing parameters, functions and subroutines for analyzing
 !!        the OpenMP configuration.
 module mptools_omp
-  use, intrinsic :: iso_fortran_env, only: int32
-  use, intrinsic :: omp_lib_kinds,   only: OMP_PROC_BIND_KIND, OMP_SCHED_KIND
+  use, intrinsic :: iso_fortran_env,     only: int32
+  use, intrinsic :: omp_lib_kinds,       only: OMP_PROC_BIND_KIND, OMP_SCHED_KIND
+  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE, MAX_THREADS
   implicit none
 
   private
@@ -47,9 +48,8 @@ contains
   !> \cond _INTERNAL_
   !> \brief Get the OpenMP schedule string.
   function get_omp_schedule_type(schedule_id) result(schedule)
-    use, intrinsic :: iso_fortran_env,     only: int32
-    use, intrinsic :: omp_lib_kinds,       only: OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC, OMP_SCHED_GUIDED, OMP_SCHED_AUTO
-    use            :: mptools_parameters,  only: STR_SIZE
+    use, intrinsic :: iso_fortran_env,  only: int32
+    use, intrinsic :: omp_lib_kinds,    only: OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC, OMP_SCHED_GUIDED, OMP_SCHED_AUTO
 
     integer(OMP_SCHED_KIND), intent(in) :: schedule_id  !< OpenMP schedule identification number.
     character(len=STR_SIZE)             :: schedule     !< Schedule type as string.
@@ -72,10 +72,9 @@ contains
   !> \cond _INTERNAL_
   !> \brief Get the OpenMP schedule string.
   function get_omp_proc_bind_type(bind_id) result(bind)
-    use, intrinsic :: iso_fortran_env,     only: int32
-    use, intrinsic :: omp_lib,             only: OMP_PROC_BIND_FALSE, OMP_PROC_BIND_TRUE, OMP_PROC_BIND_MASTER,  &
-                                                 OMP_PROC_BIND_CLOSE, OMP_PROC_BIND_SPREAD
-    use            :: mptools_parameters,  only: STR_SIZE
+    use, intrinsic :: iso_fortran_env,  only: int32
+    use, intrinsic :: omp_lib,          only: OMP_PROC_BIND_FALSE, OMP_PROC_BIND_TRUE, OMP_PROC_BIND_MASTER,  &
+                                              OMP_PROC_BIND_CLOSE, OMP_PROC_BIND_SPREAD
 
     integer(OMP_PROC_BIND_KIND), intent(in) :: bind_id  !< OpenMP thread affinity identification number.
     character(len=STR_SIZE)                 :: bind     !< Thread affinity type as string.
