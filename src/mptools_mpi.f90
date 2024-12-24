@@ -3,7 +3,7 @@
 module mptools_mpi
   use, intrinsic :: iso_fortran_env,     only: int32
   use, intrinsic :: iso_c_binding
-  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE, MAX_THREADS
+  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE
   implicit none
 
   private
@@ -153,6 +153,7 @@ contains
     call MPI_Comm_size(MPI_COMM_WORLD, nranks)
     call MPI_Comm_rank(MPI_COMM_WORLD, irank)
     if (irank == 0) then
+       if (allocated(rank_info))  deallocate(rank_info)
        allocate(rank_info(nranks))
 
        valid = mpi_rank_analysis(mpi_info, info)

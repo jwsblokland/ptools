@@ -3,7 +3,7 @@
 module mptools_ompi
   use, intrinsic :: iso_fortran_env,     only: int32
   use, intrinsic :: omp_lib_kinds,       only: OMP_PROC_BIND_KIND, OMP_SCHED_KIND
-  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE, MAX_THREADS
+  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE
   implicit none
 
   private
@@ -113,16 +113,16 @@ contains
     use            :: mptools_omp,      only: omp_t, omp_thread_t, omp_analysis
     use            :: mptools_system,   only: get_hostname
 
-    type(ompi_t),                    intent(out) :: ompi_info  !< General OMPI information.
-    type(ompi_rank_t), dimension(:), intent(out) :: rank_info  !< OMPI rank information.
-    logical                                      :: valid      !< TRUE is the MPI analysis is performed succesfully, otherwise FALSE.
+    type(ompi_t),                                 intent(out) :: ompi_info  !< General OMPI information.
+    type(ompi_rank_t), dimension(:), allocatable, intent(out) :: rank_info  !< OMPI rank information.
+    logical                                                   :: valid      !< TRUE is the MPI analysis is performed succesfully, otherwise FALSE.
 
     ! Locals
-    character(len=NAME_SIZE)                   :: hostname
-    integer(int32)                             :: irank, nranks, ithread
-    integer(int32)                             :: version, subversion
-    type(omp_t)                                :: omp_info
-    type(omp_thread_t), dimension(MAX_THREADS) :: thread_info
+    character(len=NAME_SIZE)                      :: hostname
+    integer(int32)                                :: irank, nranks, ithread
+    integer(int32)                                :: version, subversion
+    type(omp_t)                                   :: omp_info
+    type(omp_thread_t), dimension(:), allocatable :: thread_info
 
     valid      = .true.
     version    = -1
@@ -140,7 +140,7 @@ contains
 
     ! Rank information
     call MPI_Comm_rank(MPI_COMM_WORLD, irank)
-    valid = omp_analysis(omp_info, thread_info)
+    call omp_analysis(omp_info, thread_info)
 
     if (valid) then
        ompi_info%nthreads   = omp_info%nthreads
@@ -152,6 +152,9 @@ contains
 
     if (valid) then
        hostname = get_hostname()
+       if (allocated(rank_info))  deallocate(rank_info)
+       allocate(rank_info(omp_info%nthreads))
+       
        do ithread = 1, omp_info%nthreads
           rank_info(ithread)%hostname = hostname
           rank_info(ithread)%rankid   = irank
@@ -160,6 +163,8 @@ contains
           rank_info(ithread)%placeID  = thread_info(ithread)%placeID
        end do
     end if
+
+    if (allocated(thread_info))  deallocate(thread_info)
   end function ompi_rank_analysis
   !> \endcond
 
@@ -174,12 +179,12 @@ contains
     type(ompi_rank_t), dimension(:), allocatable, intent(out) :: rank_info  !< OMPI rank information.
 
     ! Locals
-    logical                                    :: valid
-    integer(int32)                             :: i, ierror, irank, nranks, nthreads
-    integer(int32)                             :: nelems, idx_s, idx_e
-    type(ompi_rank_t),  dimension(MAX_THREADS) :: info
-    type(MPI_Datatype)                         :: ompi_dtype, ompi_rank_dtype
-    type(MPI_Status)                           :: status
+    logical                                       :: valid
+    integer(int32)                                :: i, ierror, irank, nranks, nthreads
+    integer(int32)                                :: nelems, idx_s, idx_e
+    type(ompi_rank_t),  dimension(:), allocatable :: info
+    type(MPI_Datatype)                            :: ompi_dtype, ompi_rank_dtype
+    type(MPI_Status)                              :: status
 
     call ompi_init_dtypes(ompi_dtype, ompi_rank_dtype)
     call MPI_Comm_size(MPI_COMM_WORLD, nranks)
@@ -188,10 +193,12 @@ contains
        valid = ompi_rank_analysis(ompi_info, info)
 
        nthreads = ompi_info%nthreads
+       if (allocated(rank_info))  deallocate(rank_info)
        allocate(rank_info(nranks * nthreads))
        rank_info(1:nthreads) = info(1:nthreads)
 
        nelems = nthreads
+       if (.not. allocated(info))  allocate(info(nelems))
        do i = 1, nranks - 1
           call MPI_Recv(info, nelems, ompi_rank_dtype, i, 0, MPI_COMM_WORLD, status, ierror)
           idx_s                  =  status%mpi_source      * nthreads + 1
@@ -204,6 +211,7 @@ contains
        call MPI_Send(info, nelems, ompi_rank_dtype, 0, 0, MPI_COMM_WORLD, ierror)
     end if
 
+    if (allocated(info))  deallocate(info)
     call ompi_free_dtypes(ompi_dtype, ompi_rank_dtype)
   end subroutine ompi_analysis
 

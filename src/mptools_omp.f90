@@ -3,7 +3,7 @@
 module mptools_omp
   use, intrinsic :: iso_fortran_env,     only: int32
   use, intrinsic :: omp_lib_kinds,       only: OMP_PROC_BIND_KIND, OMP_SCHED_KIND
-  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE, MAX_THREADS
+  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE
   implicit none
 
   private
@@ -97,14 +97,13 @@ contains
   !> \endcond
 
   !> \brief Perform the OpenMP analysis.
-  function omp_analysis(omp_info, thread_info) result(valid)
+  subroutine omp_analysis(omp_info, thread_info)
     use, intrinsic :: iso_fortran_env,  only: int32
     use            :: omp_lib,          only: omp_get_place_num, omp_get_proc_bind, omp_get_thread_num, omp_get_num_threads
     use            :: mptools_system,   only: get_vcore_id
 
-    type(omp_t),                      intent(out) :: omp_info     !< General OpenMP information.
-    type(omp_thread_t), dimension(:), intent(out) :: thread_info  !< OpenMP thread information.
-    logical                                       :: valid        !< TRUE is the OpenMP analysis is performed succesfully, otherwise FALSE.
+    type(omp_t),                                   intent(out) :: omp_info     !< General OpenMP information.
+    type(omp_thread_t), dimension(:), allocatable, intent(out) :: thread_info  !< OpenMP thread information.
 
     ! Locals
     integer(int32) :: i, nthreads
@@ -120,20 +119,19 @@ contains
     !$omp end parallel
 
     ! Thread information
-    valid = check_thread_info(thread_info, nthreads)
-    if (valid) then
-       !$omp parallel
-       !$omp do  &
-       !$omp   private(i)
-       do i = 1, nthreads
-          thread_info(i)%threadID = omp_get_thread_num()
-          thread_info(i)%vcoreID  = get_vcore_id()
-          thread_info(i)%placeID  = omp_get_place_num()
-       end do
-       !$omp end do
-       !$omp end parallel
-    end if
-  end function omp_analysis
+    if (allocated(thread_info))  deallocate(thread_info)
+    allocate(thread_info(nthreads))
+    !$omp parallel
+    !$omp do  &
+    !$omp   private(i)
+    do i = 1, nthreads
+       thread_info(i)%threadID = omp_get_thread_num()
+       thread_info(i)%vcoreID  = get_vcore_id()
+       thread_info(i)%placeID  = omp_get_place_num()
+    end do
+    !$omp end do
+    !$omp end parallel
+  end subroutine omp_analysis
 
   !> \brief Reports the OpenMP configuration to the screen or file.
   subroutine omp_report(omp_info, thread_info, unit)
