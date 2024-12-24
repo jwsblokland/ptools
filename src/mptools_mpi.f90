@@ -100,7 +100,7 @@ contains
 
   !> \cond _INTERNAL_
   !> \brief Perform the MPI analysis for a rank.
-  function mpi_rank_analysis(mpi_info, rank_info) result(valid)
+  subroutine mpi_rank_analysis(mpi_info, rank_info)
     use, intrinsic :: iso_fortran_env,  only: int32
     use            :: mpi_f08,          only: MPI_COMM_WORLD,                                 &
                                               MPI_Comm_rank, MPI_Comm_size, MPI_Get_version
@@ -108,12 +108,10 @@ contains
 
     type(mpi_t),      intent(out) :: mpi_info   !< General MPI information.
     type(mpi_rank_t), intent(out) :: rank_info  !< MPI rank information.
-    logical                       :: valid      !< TRUE is the MPI analysis is performed succesfully, otherwise FALSE.
 
     ! Locals
     integer(int32) :: irank, nranks, version, subversion
 
-    valid      = .true.
     version    = -1
     subversion = -1
 
@@ -129,7 +127,7 @@ contains
     rank_info%hostname = get_hostname()
     rank_info%rankID   = irank
     rank_info%vcoreID  = get_vcore_id()
-  end function mpi_rank_analysis
+  end subroutine mpi_rank_analysis
   !> \endcond
 
   !> \brief Perfom the MPI analysis for all ranks.
@@ -145,7 +143,6 @@ contains
     ! Locals
     integer            :: i, ierror, irank, nranks
     type(mpi_rank_t)   :: info
-    logical            :: valid
     type(MPI_Datatype) :: mpi_dtype, mpi_rank_dtype
     type(MPI_Status)   :: status
 
@@ -156,7 +153,7 @@ contains
        if (allocated(rank_info))  deallocate(rank_info)
        allocate(rank_info(nranks))
 
-       valid = mpi_rank_analysis(mpi_info, info)
+       call mpi_rank_analysis(mpi_info, info)
        rank_info(1) = info
 
        do i = 1, nranks - 1
@@ -164,7 +161,7 @@ contains
           rank_info(status%mpi_source + 1) = info
        end do
     else
-       valid = mpi_rank_analysis(mpi_info, info)
+       call mpi_rank_analysis(mpi_info, info)
        call MPI_Send(info, 1, mpi_rank_dtype, 0, 0, MPI_COMM_WORLD, ierror)
     end if
 
