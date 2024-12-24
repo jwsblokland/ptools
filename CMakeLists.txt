@@ -43,6 +43,10 @@ include(GNUInstallDirs)
 # Add ptools library itself.
 add_subdirectory(src)
 
+# Tests
+enable_testing()
+add_subdirectory(tests)
+
 # Install cmake files.
 set(ptools_CONFIG_IN  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ptools-config.cmake.in)
 set(ptools_CONFIG_OUT ${CMAKE_CURRENT_BINARY_DIR}/cmake/ptools-config.cmake)
