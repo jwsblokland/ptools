@@ -3,7 +3,7 @@
 module mptools_mpi
   use, intrinsic :: iso_fortran_env,     only: int32
   use, intrinsic :: iso_c_binding
-  use            :: mptools_parameters,  only: NAME_SIZE
+  use            :: mptools_parameters,  only: NAME_SIZE, STR_SIZE, MAX_THREADS
   implicit none
 
   private

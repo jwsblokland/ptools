@@ -1,7 +1,7 @@
 !> \brief The program diag_ompi analyses the OpenMP+MPI configuration of the current environment.
 program diag_ompi
   use, intrinsic :: iso_fortran_env, only: error_unit, int32
-  use            :: mpi_f08,         only: MPI_COMM_WORLD,MPI_Comm_rank
+  use            :: mpi_f08,         only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Finalize, MPI_Init
   use            :: mptools_ompi,    only: ompi_t, ompi_rank_t, ompi_analysis, ompi_report
   implicit none
 

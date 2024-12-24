@@ -1,7 +1,7 @@
 !> \brief The program diag_mpi analyses the MPI configuration of the current environment.
 program diag_mpi
   use, intrinsic :: iso_fortran_env, only: error_unit, int32
-  use            :: mpi_f08,         only: MPI_COMM_WORLD, MPI_Comm_rank
+  use            :: mpi_f08,         only: MPI_COMM_WORLD, MPI_Comm_rank, MPI_Finalize, MPI_Init
   use            :: mptools_mpi,     only: mpi_t, mpi_rank_t, mpi_analysis, mpi_report
   implicit none
 

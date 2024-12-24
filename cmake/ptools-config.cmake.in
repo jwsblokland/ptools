@@ -4,81 +4,132 @@
 # Finds the ptools library, specify the starting search path in ptools_ROOT.
 #
 # Static vs. shared
-# ----------------- 
-# To make use of the static library instead of the shared one, one needs
+# -----------------
+# To make use of the static libraries instead of the shared ones, one needs
 # to set the variable ptools_USE_STATIC_LIBS to ON before calling find_package.
 # Example:
 #   set(ptools_USE_STATIC_LIBS ON)
 #   find_package(ptools CONFIG REQUIRED)
 #
 # There is also the option to make use of the dedicated static and shared
-# ptools librart.
+# ptools libraries.
 #
 # This will define the following variables:
 #
 #   ptools_FOUND     - True if the system has found the ptools libraries
 #   ptools_VERSION   - The version of the ptools library which was found
 #
-# and the following imported targets:
+# and the following imported targets depending on the specified components:
 #
-#   ptools::lib        - The ptools library
-#   ptools::lib_static - The static ptools library
-#   ptools::lib_shared - The shared ptools library
+#   ptools::omp         - The OpenMP ptools library
+#   ptools::omp_static  - The static OpenMP ptools library
+#   ptools::omp_shared  - The shared OpenMP ptools library
+#   ptools::mpi         - The MPI ptools library
+#   ptools::mpi_static  - The static MPI ptools library
+#   ptools::mpi_shared  - The shared MPI ptools library
+#   ptools::ompi        - The OpenMP+MPI ptools library
+#   ptools::ompi_static - The static OpenMP+MPI ptools library
+#   ptools::ompi_shared - The shared OpenMP+MPI ptools library
 
-find_path(ptools_INCLUDE_DIR NAMES mptools.mod DOC "ptools include directory")
-find_library(ptools_static_LIBRARY NAMES libptools.a DOC "Static ptools library")
-find_library(ptools_shared_LIBRARY NAMES libptools.so DOC "Shared ptools library")
-find_program(PTOOLS_PTOOLS name ptools DOC "ptools executable")
+find_path(ptools_INCLUDE_DIR NAMES mptools_omp.mod DOC "ptools include directory")
+find_library(ptools_omp_static_LIBRARY NAMES libptools_omp.a DOC "Static OpenMP ptools library")
+find_library(ptools_omp_shared_LIBRARY NAMES libptools_omp.so DOC "Shared OpenMP ptools library")
+find_library(ptools_mpi_static_LIBRARY NAMES libptools_mpi.a DOC "Static MPI ptools library")
+find_library(ptools_mpi_shared_LIBRARY NAMES libptools_mpi.so DOC "Shared MPI ptools library")
+find_library(ptools_ompi_static_LIBRARY NAMES libptools_ompi.a DOC "Static OpenMP+MPI ptools library")
+find_library(ptools_ompi_shared_LIBRARY NAMES libptools_ompi.so DOC "Shared OpenMP+MPI ptools library")
+find_program(ptools_diag_omp  NAMES diag_omp  DOC "diag_omp executable")
+find_program(ptools_diag_mpi  NAMES diag_mpi  DOC "diag_mpi executable")
+find_program(ptools_diag_ompi NAMES diag_ompi DOC "diag_ompi executable")
 
 # Check version here
-if (ptools_static_LIBRARY)
+if (ptools_omp_static_LIBRARY)
   set(ptools_VERSION @PROJECT_VERSION@)
 endif ()
+
+# Which components have been found.
+set(ptools_omp_FOUND FALSE)
+if (ptools_omp_static_LIBRARY AND ptools_omp_shared_LIBRARY AND ptools_diag_omp)
+  set(ptools_omp_FOUND TRUE)
+endif ()
+set(ptools_mpi_FOUND FALSE)
+if (ptools_mpi_static_LIBRARY AND ptools_mpi_shared_LIBRARY AND ptools_diag_mpi)
+  set(ptools_mpi_FOUND TRUE)
+endif ()
+set(ptools_ompi_FOUND FALSE)
+if (ptools_ompi_static_LIBRARY AND ptools_ompi_shared_LIBRARY AND ptools_diag_ompi)
+  set(ptools_ompi_FOUND TRUE)
+endif ()
+
+# Check if at least one component has been specified.
+list(LENGTH ptools_FIND_COMPONENTS ptools_NCOMPONENTS)
+if (ptools_NCOMPONENTS LESS 1)
+  message(FATAL_ERROR "No components have been specified. This is not allowed. Please, specify at least one of the components omp, mpi or ompi.")
+endif ()
+unset(ptools_NCOMPONENTS)
 
 include(FindPackageHandleStandardArgs)
 set(${CMAKE_FIND_PACKAGE_NAME}_CONFIG "${CMAKE_CURRENT_LIST_FILE}")
 find_package_handle_standard_args(ptools
   FOUND_VAR ptools_FOUND
-  REQUIRED_VARS ptools_static_LIBRARY ptools_shared_LIBRARY ptools_INCLUDE_DIR ptools_PTOOLS
+  REQUIRED_VARS ptools_INCLUDE_DIR ptools_diag_omp ptools_diag_mpi ptools_diag_ompi
+  HANDLE_COMPONENTS
   VERSION_VAR ptools_VERSION
   CONFIG_MODE
 )
 
 if (ptools_FOUND)
-  # Static library
-  add_library(ptools::lib_static STATIC IMPORTED)
-  set_target_properties(ptools::lib_static PROPERTIES
-    IMPORTED_LOCATION "${ptools_static_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${ptools_INCLUDE_DIR}"
-  )
+  foreach (component ${ptools_FIND_COMPONENTS})
+    set(ptools_LINK_LIBRARIES)
+    if ("${component}" STREQUAL "omp" OR "${component}" STREQUAL "ompi")
+      find_package(OpenMP 4.5 QUIET REQUIRED COMPONENTS Fortran)
+      list(APPEND ptools_LINK_LIBRARIES "OpenMP::OpenMP_Fortran")
+    endif ()
+    if ("${component}" STREQUAL "mpi" OR "${component}" STREQUAL "ompi")
+      find_package(MPI 3.1 QUIET REQUIRED COMPONENTS Fortran)
+      list(APPEND ptools_LINK_LIBRARIES "MPI::MPI_Fortran")
+    endif ()
 
-  # Shared library
-  add_library(ptools::lib_shared SHARED IMPORTED)
-  set_target_properties(ptools::lib_shared PROPERTIES
-    IMPORTED_LOCATION "${ptools_shared_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${ptools_INCLUDE_DIR}"
-  )
-  
-  if(ptools_USE_STATIC_LIBS)
-    add_library(ptools::lib ALIAS ptools::lib_static)
-    set(ptools_LIBRARY ${ptools_static_LIBRARY)
-  else()
-    add_library(ptools::lib ALIAS ptools::lib_shared)
-    set(ptools_LIBRARY ${ptools_shared_LIBRARY)
-  endif()
+    # Static library
+    add_library(ptools::${component}_static STATIC IMPORTED)
+    set_target_properties(ptools::${component}_static PROPERTIES
+      IMPORTED_LOCATION "${ptools_${component}_static_LIBRARY}"
+      INTERFACE_LINK_LIBRARIES "${ptools_LINK_LIBRARIES}"
+      INTERFACE_INCLUDE_DIRECTORIES "${ptools_INCLUDE_DIR}"
+    )
 
-  # Executable
-  add_executable(ptools::pdiag IMPORTED)
-  set_target_properties(ptools::pdiag PROPERTIES
-    IMPORTED_LOCATION "${ptools_shared_LIBRARY}"
-    INTERFACE_INCLUDE_DIRECTORIES "${ptools_INCLUDE_DIR}"
-  )
-  
+    # Shared library
+    add_library(ptools::${component}_shared SHARED IMPORTED)
+    set_target_properties(ptools::${component}_shared PROPERTIES
+      IMPORTED_LOCATION "${ptools_${component}_shared_LIBRARY}"
+      INTERFACE_LINK_LIBRARIES "${ptools_LINK_LIBRARIES}"
+      INTERFACE_INCLUDE_DIRECTORIES "${ptools_INCLUDE_DIR}"
+    )
+
+    if (ptools_USE_STATIC_LIBS)
+      add_library(ptools::${component} ALIAS ptools::${component}_static)
+      set(ptools_${component}_LIBRARY ${ptools_${component}_static_LIBRARY})
+    else ()
+      add_library(ptools::${component} ALIAS ptools::${component}_shared)
+      set(ptools_${component}_LIBRARY ${ptools_${component}_shared_LIBRARY})
+    endif ()
+
+    unset(ptools_LINK_LIBRARIES)
+  endforeach ()
 endif()
 
 mark_as_advanced(
-  ptools_static_LIBRARY
-  ptools_shared_LIBRARY
-  ptools_LIBRARY
+  ptools_omp_LIBRARY
+  ptools_omp_static_LIBRARY
+  ptools_omp_shared_LIBRARY
+  ptools_mpi_static_LIBRARY
+  ptools_mpi_LIBRARY
+  ptools_mpi_shared_LIBRARY
+  ptools_ompi_LIBRARY
+  ptools_ompi_static_LIBRARY
+  ptools_ompi_shared_LIBRARY
+  ptools_diag_omp
+  ptools_diag_mpi
+  ptools_diag_ompi
   ptools_INCLUDE_DIR
 )
