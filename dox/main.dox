@@ -1,0 +1,94 @@
+/**
+ * \mainpage ptools
+ *
+ * The main purpose ptools is to provide a small set of tools to quickly analyze
+ * the current OpenMP, MPI, and/or OpenMP+MPI configuation settings in the
+ * current environment. This could be useful before running, for example, a
+ * large scale hybride OpenMP+MPI code. All tools and the library are written
+ * in Fortran.
+ *
+ * \section ptools_tools Tools
+ * ptools provides three tools for a quick analysis. These tools are listed below.
+ * \li \p diag_omp \n
+ *     Diagnose the OpenMP configuration of the current environment.
+ * \li \p diag_mpi \n
+ *     Diagnose the MPI configuration of the current environment.
+ * \li \p diag_ompi \n
+ *     Diagnose the hybride OpenMP and MPI configuration of the current environment.
+ * \li \p show_setup.bsh \n
+ *     Show the optimal hybride OpenMP and MPI configuration for a given number of nodes,
+ *     number of ranks per node and number of cores per node.
+ *
+ *\section ptools_openmp OpenMP
+ * It is possible to incorporate the OpenMP analysis in your existing application. The
+ * listing below, shows a possible implementation.
+ *
+ * \code{.f90}
+ * subroutine analyze_openmp()
+ *   use :: mptools_omp,  only: omp_t, omp_thread_t, omp_analysis, omp_report
+ * 
+ *   ! Locals
+ *   type(omp_t)                                   :: omp_info
+ *   type(omp_thread_t), dimension(:), allocatable :: thread_info
+ * 
+ *   call omp_analysis(omp_info, thread_info)
+ *   call omp_report(omp_info, thread_info)
+ *
+ *   if (allocated(thread_info))  deallocate(thread_info)
+ * end subroutine analyze_openmp
+ * \endcode
+ *
+ * \section ptools_mpi MPI
+ * Similar as for the OpenMP analysis it is also possible the include the MPI analysis
+ * in your application. Below you will find a possible implementation. Be aware, in this
+ * example it is assumed the subroutine \p MPI_Init() and \p MPI_Finalize() are called
+ * before and after this subroutine, respectively.
+ *
+ * \code{.f90}
+ * subroutine analyze_mpi()
+ *   use, intrinsic :: iso_fortran_env, only: error_unit, int32
+ *   use            :: mpi_f08,         only: MPI_COMM_WORLD, MPI_Comm_rank
+ *   use            :: mptools_mpi,     only: mpi_t, mpi_rank_t, mpi_analysis, mpi_report
+ *  
+ *   ! Locals
+ *   integer(int32)                              :: irank, ierror
+ *   type(mpi_t)                                 :: mpi_info
+ *   type(mpi_rank_t), dimension(:), allocatable :: rank_info
+ *  
+ *   call MPI_Comm_rank(MPI_COMM_WORLD, irank)
+ *   call mpi_analysis(mpi_info, rank_info)
+ *   if (irank == 0) then
+ *      call mpi_report(mpi_info, rank_info)
+ *   end if
+ *  
+ *   if (allocated(rank_info))  deallocate(rank_info)
+ * end subroutine analyze_mpi
+ * \endcode
+ *
+ * \section ptools_ompi OpenMP in combination with MPI
+ * For the hybrid OpenMP and MPI analysis the analysis can also be done in an existing
+ * application. Similar as for MPI an example implementation is shown below. Yet again,
+ * it is assumed the subroutine \p MPI_Init() and \p MPI_Finalize() are called before and
+ * after this subroutine, respectively.
+ * 
+ * \code{.f90}
+ * subroutine analyze_openmp_mpi()
+ *   use, intrinsic :: iso_fortran_env, only: error_unit, int32
+ *   use            :: mpi_f08,         only: MPI_COMM_WORLD, MPI_Comm_rank
+ *   use            :: mptools_ompi,    only: ompi_t, ompi_rank_t, ompi_analysis, ompi_report
+ *  
+ *   ! Locals
+ *   integer(int32)                               :: irank, ierror
+ *   type(ompi_t)                                 :: ompi_info
+ *   type(ompi_rank_t), dimension(:), allocatable :: rank_info
+ *  
+ *   call MPI_Comm_rank(MPI_COMM_WORLD, irank)
+ *   call ompi_analysis(ompi_info, rank_info)
+ *   if (irank == 0) then
+ *      call ompi_report(ompi_info, rank_info)
+ *   end if
+ *  
+ *   if (allocated(rank_info))  deallocate(rank_info)
+ * end subroutine analyze_openmp_mpi
+ * \endcode
+ */
