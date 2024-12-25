@@ -40,7 +40,7 @@ jobs:
           -DBUILD_DOC:BOOL=ON
           -DBUILD_DOC_INTERNAL:BOOL=OFF
           -B ${{github.workspace}}/ptools-build
-          -S ${{github.workspace}}/src
+          -S ${{github.workspace}}/ptools-src
 
       - name: ptools - Build
         run: >-
