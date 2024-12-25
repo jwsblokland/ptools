@@ -1,0 +1,62 @@
+name: release
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Doxygen and TeXlive
+        run: |
+          sudo apt update
+          sudo apt install doxygen texlive texlive-latex-extra
+
+      - name: Install OpenMPI
+        run: |
+          sudo apt update
+          sudo apt install openmpi-bin libopenmpi-dev
+
+      - name: ptools - Clone source
+        uses: actions/checkout@v4
+        with:
+          repository: 'jwsblokland/ptools'
+          fetch-depth: 0
+          path: 'ptools-src'
+
+      - name: ptools - Run CMake
+        run: >-
+          cmake
+          -DCMAKE_Fortran_COMPILER=gfortran
+          -DCMAKE_BUILD_TYPE:STRING=Release
+          -DBUILD_DOC:BOOL=ON
+          -DBUILD_DOC_INTERNAL:BOOL=OFF
+          -B ${{github.workspace}}/ptools-build
+          -S ${{github.workspace}}/src
+
+      - name: ptools - Build
+        run: >-
+          cmake
+          --build ${{github.workspace}}/ptools-build
+          --config Release
+          --parallel
+
+      - name: ptools - Run all tests
+        run: >-
+          ctest
+          --verbose
+          --test-dir ${{github.workspace}}/ptools-build
+
+      - name: ptools - Install
+        run: >-
+          cmake
+          --install ${{github.workspace}}/ptools-build
+          --prefix ${{github.workspace}}/ptools-install
