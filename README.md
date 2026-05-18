@@ -1,6 +1,6 @@
 # ptools
 The package ptools written in Fortran provides both tools and libraries for showing the OpenMP
-and MPI  configuration in the current environment. This particular useful when running an OpenMP,
+and MPI configuration in the current environment. This particular useful when running an OpenMP,
 MPI or hybrid OpenMP and MPI application with a long runtime. It allows you to quickly determine
 the current OpenMP and/or MPI configuration before running the actual code.
 

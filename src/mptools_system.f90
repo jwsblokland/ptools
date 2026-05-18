@@ -1,4 +1,4 @@
-  !> \cond _INTERNAL_
+!> \cond _INTERNAL_
 !> \brief Module containing parameters, functions and subroutines for retrieving
 !!        the system information.
 module mptools_system
@@ -74,8 +74,8 @@ contains
 
     i = 1
     do while (C_string(i) /= c_null_char .and. i <= len(F_string))
-      F_string(i:i) = C_string(i)
-      i             = i+1
+       F_string(i:i) = C_string(i)
+       i             = i+1
     end do
     if (i<len(F_string)) F_string(i:) = ' '
   end subroutine C_F_string
