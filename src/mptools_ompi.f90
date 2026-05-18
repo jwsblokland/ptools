@@ -152,7 +152,7 @@ contains
     allocate(rank_info(omp_info%nthreads))
     do ithread = 1, omp_info%nthreads
        rank_info(ithread)%hostname = hostname
-       rank_info(ithread)%rankid   = irank
+       rank_info(ithread)%rankID   = irank
        rank_info(ithread)%threadID = thread_info(ithread)%threadID
        rank_info(ithread)%vcoreID  = thread_info(ithread)%vcoreID
        rank_info(ithread)%placeID  = thread_info(ithread)%placeID
@@ -218,7 +218,8 @@ contains
     integer(int32),    optional,     intent(in) :: unit       !< File unit.
 
     ! Locals
-    integer(int32) :: i, lunit, nranks, nthreads
+    integer(int32)    :: i, len, lunit, nranks, nthreads
+    character(len=50) :: fmth, fmtv
 
     ! Checks.
     nranks   = ompi_info%nranks
@@ -228,6 +229,14 @@ contains
     lunit = output_unit
     if (present(unit))  lunit = unit
 
+    ! Determine maximum length of hostname.
+    len = 8
+    do i = 1, nranks * nthreads
+       len = max(len, len_trim(rank_info(i)%hostname))
+    end do
+    write(fmth, 100) len
+    write(fmtv, 110) len
+
     write(lunit, '(A,A,A)')      "--- ptools ", trim(version()), ": OpenMP+MPI analysis report ---"
     write(lunit, '(A,I0,A1,I0)') "  MPI version:      ", ompi_info%version, ".", ompi_info%subversion
     write(lunit, '(A,I0)')       "  Ranks:            ", nranks
@@ -236,13 +245,13 @@ contains
     write(lunit, '(A,A)')        "  Schedule:         ", trim(get_omp_schedule_type(ompi_info%schedule))
     write(lunit, '(A,I0)')       "  Chunk size:       ", ompi_info%chunk_size
     write(lunit, '(A)')          "  Rank info"
-    write(lunit, 100)            "Hostname", "RankID", "ThreadID", "vCoreID", "PlaceID"
+    write(lunit, fmth)            "Hostname", "RankID", "ThreadID", "vCoreID", "PlaceID"
     do i = 1, nranks * nthreads
-       write(output_unit, 110) trim(rank_info(i)%hostname), rank_info(i)%rankID,  rank_info(i)%threadID, rank_info(i)%vcoreID,  &
+       write(output_unit, fmtv) trim(rank_info(i)%hostname), rank_info(i)%rankID,  rank_info(i)%threadID, rank_info(i)%vcoreID,  &
                                rank_info(i)%placeID
     end do
 
-100 format(4X,A16,2X,A6,2X,A8,2X,A7,2X,A7)
-110 format(4X,A16,2X,I6,2X,I8,2X,I7,2X,I7)
+100 format('(4X,A', I0, ',2X,A6,2X,A8,2X,A7,2X,A7)')
+110 format('(4X,A', I0, ',2X,I6,2X,I8,2X,I7,2X,I7)')
   end subroutine ompi_report
 end module mptools_ompi

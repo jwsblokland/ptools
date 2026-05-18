@@ -160,7 +160,7 @@ contains
     write(lunit, '(A)')     "  Thread info"
     write(lunit, 100)       "ThreadID", "vCoreID", "PlaceID"
     do i = 1, nthreads
-       write(output_unit, 110) thread_info(i)%threadID, thread_info(i)%vcoreID, thread_info(i)%placeID
+       write(lunit, 110) thread_info(i)%threadID, thread_info(i)%vcoreID, thread_info(i)%placeID
     end do
   
 100 format(4X,A8,2X,A7,2X,A7)

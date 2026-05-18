@@ -178,7 +178,8 @@ contains
     integer(int32),   optional,     intent(in) :: unit       !< File unit.
 
     ! Locals
-    integer(int32) :: i, lunit, nranks
+    integer(int32)    :: i, len, lunit, nranks
+    character(len=50) :: fmth, fmtv
 
     ! Checks.
     if (.not. check_rank_info(rank_info, mpi_info%nranks))  return
@@ -188,16 +189,24 @@ contains
     lunit = output_unit
     if (present(unit))  lunit = unit
 
+    ! Determine maximum length of hostname.
+    len = 8
+    do i = 1, nranks
+       len = max(len, len_trim(rank_info(i)%hostname))
+    end do
+    write(fmth, 100) len
+    write(fmtv, 110) len
+
     write(lunit, '(A,A,A)')      "--- ptools ", trim(version()), ": MPI analysis report ---"
     write(lunit, '(A,I0,A1,I0)') "  MPI version: ", mpi_info%version, ".", mpi_info%subversion
     write(lunit, '(A,I0)')       "  Ranks:       ", nranks
     write(lunit, '(A)')          "  Rank info"
-    write(lunit, 200)            "Hostname", "RankID", "vCoreID"
+    write(lunit, fmth)            "Hostname", "RankID", "vCoreID"
     do i = 1, nranks
-       write(output_unit, 210) trim(rank_info(i)%hostname), rank_info(i)%rankID, rank_info(i)%vcoreID
+       write(output_unit, fmtv) trim(rank_info(i)%hostname), rank_info(i)%rankID, rank_info(i)%vcoreID
     end do
 
-200 format(4X,A16,2X,A6,2X,A7)
-210 format(4X,A16,2X,I6,2X,I7)
+100 format('(4X,A', I0, ',2X,A6,2X,A7)')
+110 format('(4X,A', I0, ',2X,I6,2X,I7)')
   end subroutine mpi_report
 end module mptools_mpi
